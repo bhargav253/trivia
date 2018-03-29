@@ -10,9 +10,13 @@ import requests
 import json
 
 def test_srch():
-    q = "Who was the actor for Gladiator"
-    opts = ["Russell Crowe","Brad Pitt","Matt Damon"]
+    q = "What kind of writing is rewarded with a Hugo Awars"
+    opts = ["science-fiction","horror-fiction","Expedition Robinson"]
     cnts = goog_srch(q,opts)
+
+def test_img():
+    img = screen_shot()
+    img.show()
 
 def setup():
     global goog_vclient
@@ -34,21 +38,34 @@ def goog_srch(q,opts):
     resp = requests.get(goog_cse + query)
     resp = resp.text.encode('utf8','replace').splitlines()
 
+    print resp
+    
     cnt = {}
     for opt in opts:
         cnt[opt] = 0
         
     for line in resp:            
         for opt in opts:
-            if(re.match(".*\s+" + opt + "\s+.*",line,re.IGNORECASE)):
-                cnt[opt] += 1
+            if(re.match(".*\-",opt)):
+                s_opt = opt.split("-")
+                for o in s_opt:
+                    if(re.match(".*\s+" + o + "\s+.*",line,re.IGNORECASE)):
+                        cnt[opt] += 1
+            else:
+                if(re.match(".*\s+" + opt + "\s+.*",line,re.IGNORECASE)):
+                    cnt[opt] += 1
 
     for opt in opts:
         print opt + ":" + str(cnt[opt])
 
                 
-def get_text(picture):    
-    image = types.Image(content=picture)
+def get_text():    
+    img    = screen_shot()
+    img_ba = io.BytesIO()
+    img.save(img_ba,format='PNG')
+    img_ba = img_ba.getvalue()
+
+    image = types.Image(content=img_ba)
     response = goog_vclient.text_detection(image=image)
     texts = response.text_annotations
 
@@ -74,30 +91,28 @@ def get_text(picture):
     print "Q " + q
     print "options " + str(opts)
     print "neg " + str(neg)
+
+    goog_srch(q,opts)
         
 def screen_shot():
-    _w,_h = 250,230
-    _x,_y = 530,270
+    _w,_h = 270,230
+    _x,_y = 390,280
     dsp   = display.Display()
     root  = dsp.screen().root
     raw   = root.get_image(_x,_y,_w,_h,X.ZPixmap, 0xffffffff)
     image = Image.frombytes("RGB", (_w, _h), raw.data, "raw", "BGRX")
-    img_ba= io.BytesIO()
-    image.save(img_ba,format='PNG')
-    img_ba= img_ba.getvalue()
-    get_text(img_ba)
-    #image.show()    
-
+    return image
+    
 if __name__ == '__main__':
-
     setup()
     test_srch()
-    
+    #test_img()    
     '''
-    key = ''
+    inp = ''
     while True:
-        key = raw_input('< : ')
-        if(key == 'x'):
+        inp = raw_input('< : ')
+        if(inp == 'x'):
             break
-        screen_shot()
+        get_text()
+
     '''
